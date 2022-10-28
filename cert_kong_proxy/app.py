@@ -10,19 +10,17 @@ import urllib.parse
 
 app = Flask(__name__)
 
-client_secret = os.environ.get('CLIENT_SECRET')
-if not client_secret:
-    raise Exception('client certificate missing')
-
+CLIENT_SECRET = os.environ.get('CLIENT_SECRET', 'secret')
+KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
+KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'master')
+CLIENT_ID = os.environ.get('CLIENT_ID', 'client')
+GATEWAY_URL = os.environ.get('GATEWAY_URL', 'http://gateway:8080')
 
 def get_user_token(cert):
-    KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL')
-    KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM')
-
     user_name = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     auth_data = {
-        'client_id': os.environ.get('CLIENT_ID'),
-        'client_secret': client_secret,
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
         'requested_subject': user_name
     }
@@ -31,18 +29,16 @@ def get_user_token(cert):
     token = response.json()
     return token['access_token']
 
-def make_request(token):
+def make_request(token, method):
     full_path = request.full_path
-    gateway_url = os.environ.get('GATEWAY_URL')
 
-    target_url = urllib.parse.urljoin(gateway_url, full_path)
+    target_url = urllib.parse.urljoin(GATEWAY_URL, full_path)
     headers = {
         'Authorization': f'Bearer {token}'
     }
     # Get raw request data, could be of any type
     data = request.get_data()
 
-    method = request.headers.get('Request-Method')
     if method == 'GET':
         response = requests.get(target_url, headers=headers)
     elif method == 'POST':
@@ -62,15 +58,25 @@ def make_request(token):
 @app.route('/<path:path>')
 def hello(path):
     pem_cert = request.headers.get('X-SSL-CERT')
+    if not pem_cert:
+        return {'error': 'SSL certificate missing'}, 400
 
     # the PEM cert wil contain URL encoded characters like %20 for spaces
-    decoded_pem_cert = urllib.parse.unquote(pem_cert)
-    cert = x509.load_pem_x509_certificate(decoded_pem_cert.encode(), default_backend())
+    try:
+        decoded_pem_cert = urllib.parse.unquote(pem_cert)
+        cert = x509.load_pem_x509_certificate(decoded_pem_cert.encode(), default_backend())
+    except Exception as e:
+        return {'error': 'SSL certificate could not be parsed'}, 400
 
-    if not cert:
-        return {'error': 'SSL certificate missing'}
+    cn = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+    if len(cn) == 0:
+        return {'error': 'Missing common name field'}, 400
+
+    method = request.headers.get('Request-Method')
+    if not method:
+        return {'error': 'Missing request method header'}, 400
 
     token = get_user_token(cert)
-    return make_request(token)
+    return make_request(token, method)
 
     

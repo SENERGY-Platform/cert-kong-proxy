@@ -2,6 +2,8 @@
 *.crt
 *.cert
 *.key
+development/docker-compose.yml
+development/docker-compose.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

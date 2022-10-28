@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  cert_kong_proxy:
+    container_name: cert_kong_proxy
+    image: cert_kong_proxy
+    build:
+      context: ..
+      dockerfile: ./docker_build/Dockerfile
+      target: test

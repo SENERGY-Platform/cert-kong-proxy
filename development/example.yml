@@ -1,0 +1,12 @@
+  ca_cert_kong_service:
+    build:
+      context: ..
+      dockerfile: ./docker_build/Dockerfile
+      args:
+        - ENV: dev
+    environment:
+      CLIENT_SECRET: secret
+      CLIENT_ID: connector
+      KEYCLOAK_REALM: master
+      GATEWAY_URL: http://logger_server:8080
+      KEYCLOAK_URL: http://keycloak:8080
