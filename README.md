@@ -13,11 +13,9 @@ docker build -t cert-kong-proxy .
 ```
 
 # Deployment
-```
-docker run -p 443:443 \
-            -e CLIENT_SECRET=secret \
-            -e CLIENT_ID=client \
-            -e GATEWAY_URL=http://gateway:8080 \
-            -e KEYCLOAK_URL=http://keycloak:8080 \
-            cert-kong-proxy 
-```
+Port 443 
+CA_URL
+CLIENT_SECRET=secret 
+CLIENT_ID=client 
+GATEWAY_URL=http://gateway:8080 
+KEYCLOAK_URL=http://keycloak:8080 
