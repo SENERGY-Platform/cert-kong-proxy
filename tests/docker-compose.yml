@@ -6,5 +6,5 @@ services:
     image: cert_kong_proxy
     build:
       context: ..
-      dockerfile: ./docker_build/Dockerfile
+      dockerfile: ./build/Dockerfile
       target: test
