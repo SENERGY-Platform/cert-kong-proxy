@@ -8,3 +8,5 @@ services:
       context: ..
       dockerfile: ./build/Dockerfile
       target: test
+    volumes:
+      - /home:/tests

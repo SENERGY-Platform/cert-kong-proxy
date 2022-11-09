@@ -1,0 +1,19 @@
+name: Tests
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the stack
+        run: docker compose -f tests/docker-compose.yml build
+      - name: Test
+        run: docker compose -f tests/docker-compose.yml run cert_kong_proxy 
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: /home/coverage.xml

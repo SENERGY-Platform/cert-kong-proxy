@@ -59,11 +59,15 @@ COPY --from=builder /opt/venv /opt/venv
 
 COPY tests ./tests
 
+COPY build/run_tests.sh run_tests.sh
+
 # Make sure we use the virtualenv:
 ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip3 install coverage
 
 EXPOSE 5000
 
 ENV ENV=test
 
-CMD [ "coverage", "run", "-m", "unittest", "discover", "tests"]
+CMD [ "sh", "run_tests.sh" ]

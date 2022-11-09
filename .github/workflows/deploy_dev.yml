@@ -1,4 +1,4 @@
-name: 'DEV Docker Image'
+name: 'DEV Deployment'
 
 on:
   push:
@@ -37,6 +37,7 @@ jobs:
           tags: |
             smartenergyplatform/cert_kong_proxy:dev
             ghcr.io/senergy-platform/cert_kong_proxy:dev
+          target: dev
       - name: Deploy
         uses: wei/curl@v1
         with:
