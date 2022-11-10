@@ -1,9 +1,4 @@
-*.csr
-*.crt
-*.cert
-*.key
-development/docker-compose.yml
-development/docker-compose.yaml
+deployment/dev/docker-compose.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

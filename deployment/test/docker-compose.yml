@@ -5,7 +5,7 @@ services:
     container_name: cert_kong_proxy
     image: cert_kong_proxy
     build:
-      context: ..
+      context: ../..
       dockerfile: ./build/Dockerfile
       target: test
     volumes:
