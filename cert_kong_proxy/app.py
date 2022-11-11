@@ -18,7 +18,7 @@ KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
 KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'master')
 CLIENT_ID = os.environ.get('CLIENT_ID', 'client')
 GATEWAY_URL = os.environ.get('GATEWAY_URL', 'http://gateway:8080')
-CA_URL = os.environ.get('CA_URL', 'http://gateway:8080')
+CA_URL = os.environ.get('CA_URL', 'http://ca:8080')
 
 class APIError(Exception):
     """All custom API Exceptions"""
@@ -39,8 +39,11 @@ def get_user_token(cert):
     }
     auth_url = f'{KEYCLOAK_URL}/auth/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token'
     response = requests.post(auth_url, data=auth_data)
-    token = response.json()
-    return token['access_token']
+    data = response.json()
+    if 'access_token' not in data:
+        app.logger.debug(data)
+        raise APIError(f'Could not get token from keycloak')
+    return data['access_token']
 
 def make_request(token, method):
     full_path = request.full_path
@@ -72,18 +75,22 @@ def make_ocsp_request(cert):
     response = requests.post(target_url, json={"certificate": cert, "status": "good"})
     response_data = response.json()
     if not response_data['success']:
-        raise APIError('OCSP validation was not successful')
+        err = response_data['errors']
+        app.logger.debug(err)
+        raise APIError(f'OCSP validation was not successful')
     return response_data
 
 def check_validity_of_cert(cert):
     response = make_ocsp_request(cert)
 
-    try:   
-        ocsp_response_decoded = base64.b64decode(response.json()['result']['ocspResponse'])
+    try:  
+        ocsp_response = response['result']['ocspResponse']
+        ocsp_response_decoded = base64.b64decode(ocsp_response)
         ocsp_response_decoded = ocsp.load_der_ocsp_response(ocsp_response_decoded)
         return ocsp_response_decoded.certificate_status == ocsp.OCSPCertStatus.GOOD
     except Exception as e:
-        raise APIError('OCSP parsing was not successful')
+        app.logger.debug(e)
+        raise APIError(f'Parsing of OCSP response was not successful')
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -97,7 +104,8 @@ def hello(path):
         decoded_pem_cert = urllib.parse.unquote(pem_cert)
         cert = x509.load_pem_x509_certificate(decoded_pem_cert.encode(), default_backend())
     except Exception as e:
-        raise APIError('SSL certificate could not be parsed')
+        app.logger.debug(e)
+        raise APIError(f'SSL certificate could not be parsed')
 
     cn = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
     if len(cn) == 0:

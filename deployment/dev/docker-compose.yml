@@ -4,9 +4,11 @@
       dockerfile: ./docker_build/Dockerfile
       args:
         - ENV: dev
+      image: 
     environment:
       CLIENT_SECRET: secret
-      CLIENT_ID: connector
+      CLIENT_ID: client
       KEYCLOAK_REALM: master
       GATEWAY_URL: http://logger_server:8080
       KEYCLOAK_URL: http://keycloak:8080
+      CA_URL: http://ca:8080
