@@ -29,6 +29,12 @@ def handle_http_exception(e):
     app.logger.error(e)
     return jsonify({'error': str(e)}), 500
 
+@app.after_request
+def after_request(response):
+    app.logger.info(f"{request.remote_addr} - {request.method} - {request.scheme} - {request.full_path} - {response.status}")
+    app.logger.debug(f'Request body: {request.get_data()}')
+    return response
+
 def get_user_token(cert):
     user_name = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     auth_data = {
@@ -98,6 +104,8 @@ def hello(path):
     pem_cert = request.headers.get('X-SSL-CERT')
     if not pem_cert:
         raise APIError('SSL certificate missing')
+
+    app.logger.debug(pem_cert)
 
     # the PEM cert wil contain URL encoded characters like %20 for spaces
     try:
