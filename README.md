@@ -6,6 +6,11 @@
     <img src="https://github.com/SENERGY-Platform/cert-kong-proxy/actions/workflows/deploy_dev.yml/badge.svg" alt="Deployment Dev" />
 </a>
 
+<a href="https://github.com/SENERGY-Platform/cert-kong-proxy/actions/workflows/deploy_prod.yml" rel="nofollow">
+    <img src="https://github.com/SENERGY-Platform/cert-kong-proxy/actions/workflows/deploy_prod.yml/badge.svg" alt="Deployment Prod" />
+</a>
+
+
 # CERT-KONG-PROXY
 This web server acts a reverse proxy which gets authenticated request from the cert-auth-proxy and exchanges a JWT token to forward the request to the backend
 
