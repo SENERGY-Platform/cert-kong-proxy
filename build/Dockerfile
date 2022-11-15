@@ -24,10 +24,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app/server
+WORKDIR /app
 EXPOSE 5000
 
-CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "--chdir=server", "main:app"]
 
 # Development image -> set debug levels
 FROM prod AS dev
