@@ -1,10 +1,12 @@
-  ca_cert_kong_service:
+version: '3'
+
+services:
+  cert-kong-proxy:
     build:
-      context: ..
-      dockerfile: ./docker_build/Dockerfile
-      args:
-        - ENV: dev
-      image: 
+      context: ../..
+      dockerfile: ./build/Dockerfile
+      target: dev
+    image: cert-kong-proxy
     environment:
       CLIENT_SECRET: secret
       CLIENT_ID: client

@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-import os 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.x509.oid import NameOID
@@ -8,17 +7,13 @@ import base64
 import urllib.parse
 import requests 
 import urllib.parse
-from werkzeug.exceptions import HTTPException
-
+from server.config import Config
+import logging 
 
 app = Flask(__name__)
 
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET', 'secret')
-KEYCLOAK_URL = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
-KEYCLOAK_REALM = os.environ.get('KEYCLOAK_REALM', 'master')
-CLIENT_ID = os.environ.get('CLIENT_ID', 'client')
-GATEWAY_URL = os.environ.get('GATEWAY_URL', 'http://gateway:8080')
-CA_URL = os.environ.get('CA_URL', 'http://ca:8080')
+app.config.from_object(Config)
+app.logger.setLevel(logging.DEBUG)
 
 class APIError(Exception):
     """All custom API Exceptions"""
@@ -38,12 +33,12 @@ def after_request(response):
 def get_user_token(cert):
     user_name = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
     auth_data = {
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET,
+        'client_id': app.config["CLIENT_ID"],
+        'client_secret': app.config["CLIENT_SECRET"],
         'grant_type': 'urn:ietf:params:oauth:grant-type:token-exchange',
         'requested_subject': user_name
     }
-    auth_url = f'{KEYCLOAK_URL}/auth/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token'
+    auth_url = f'{app.config["KEYCLOAK_URL"]}/auth/realms/{app.config["KEYCLOAK_REALM"]}/protocol/openid-connect/token'
     response = requests.post(auth_url, data=auth_data)
     data = response.json()
     if 'access_token' not in data:
@@ -54,7 +49,7 @@ def get_user_token(cert):
 def make_request(token, method):
     full_path = request.full_path
 
-    target_url = urllib.parse.urljoin(GATEWAY_URL, full_path)
+    target_url = urllib.parse.urljoin(app.config["GATEWAY_URL"], full_path)
     headers = {
         'Authorization': f'Bearer {token}'
     }
@@ -77,7 +72,7 @@ def make_request(token, method):
     return response.content
 
 def make_ocsp_request(cert):
-    target_url = urllib.parse.urljoin(CA_URL, 'ocsp')
+    target_url = urllib.parse.urljoin(app.config["CA_URL"], 'ocsp')
     response = requests.post(target_url, json={"certificate": cert, "status": "good"})
     response_data = response.json()
     if not response_data['success']:
@@ -93,9 +88,10 @@ def check_validity_of_cert(cert):
         ocsp_response = response['result']['ocspResponse']
         ocsp_response_decoded = base64.b64decode(ocsp_response)
         ocsp_response_decoded = ocsp.load_der_ocsp_response(ocsp_response_decoded)
+        app.logger.debug(ocsp_response_decoded.certificate_status)
         return ocsp_response_decoded.certificate_status == ocsp.OCSPCertStatus.GOOD
     except Exception as e:
-        app.logger.debug(e)
+        app.logger.error(e)
         raise APIError(f'Parsing of OCSP response was not successful')
 
 @app.route('/', defaults={'path': ''})
@@ -112,7 +108,7 @@ def hello(path):
         decoded_pem_cert = urllib.parse.unquote(pem_cert)
         cert = x509.load_pem_x509_certificate(decoded_pem_cert.encode(), default_backend())
     except Exception as e:
-        app.logger.debug(e)
+        app.logger.error(e)
         raise APIError(f'SSL certificate could not be parsed')
 
     cn = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)

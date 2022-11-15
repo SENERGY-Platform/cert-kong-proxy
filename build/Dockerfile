@@ -16,7 +16,7 @@ RUN git log -1 --oneline > version.txt
 FROM python:3.8 AS prod
 WORKDIR /app
 COPY --from=builder /app/version.txt .
-COPY --from=builder /app/cert_kong_proxy cert_kong_proxy
+COPY --from=builder /app/server server
 COPY --from=builder /opt/venv /opt/venv
 
 # Make sure we use the virtualenv:
@@ -24,10 +24,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-WORKDIR /app/cert_kong_proxy
+WORKDIR /app/server
 EXPOSE 5000
 
-CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD [ "gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 # Development image -> set debug levels
 FROM prod AS dev
@@ -39,7 +39,7 @@ ENV FLASK_DEBUG=1
 FROM python:3.8 AS test
 WORKDIR /app
 COPY --from=builder /app/version.txt .
-COPY --from=builder /app/cert_kong_proxy ./cert_kong_proxy
+COPY --from=builder /app/server ./server
 COPY --from=builder /opt/venv /opt/venv
 
 COPY tests ./tests
