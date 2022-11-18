@@ -9,4 +9,4 @@ services:
       dockerfile: ./build/Dockerfile
       target: test
     volumes:
-      - /tmp:/tests
+      - ~/coverage_results:/tests

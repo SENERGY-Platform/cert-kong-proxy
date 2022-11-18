@@ -9,6 +9,7 @@ import requests
 import urllib.parse
 from server.config import Config
 import logging 
+from server.external import get_ocsp, get_token, forward_request
 
 app = Flask(__name__)
 
@@ -39,7 +40,7 @@ def get_user_token(cert):
         'requested_subject': user_name
     }
     auth_url = f'{app.config["KEYCLOAK_URL"]}/auth/realms/{app.config["KEYCLOAK_REALM"]}/protocol/openid-connect/token'
-    response = requests.post(auth_url, data=auth_data)
+    response = get_token(auth_url, auth_data)
     data = response.json()
     if 'access_token' not in data:
         app.logger.debug(data)
@@ -55,25 +56,12 @@ def make_request(token, method):
     }
     # Get raw request data, could be of any type
     data = request.get_data()
-
-    if method == 'GET':
-        response = requests.get(target_url, headers=headers)
-    elif method == 'POST':
-        response = requests.post(target_url, data=data, headers=headers)
-    elif method == 'DELETE':
-        response = requests.delete(target_url, headers=headers)
-    elif method == 'PATCH':
-        response = requests.patch(target_url, data=data, headers=headers)
-    elif method == 'PUT':
-        response = requests.put(target_url, data=data, headers=headers)
-    elif method == 'HEAD':
-        response = requests.head(target_url, headers=headers)
-
+    response = forward_request(method, target_url, headers, data)
     return response.content
 
 def make_ocsp_request(cert):
     target_url = urllib.parse.urljoin(app.config["CA_URL"], 'ocsp')
-    response = requests.post(target_url, json={"certificate": cert, "status": "good"})
+    response = get_ocsp(target_url, cert)
     response_data = response.json()
     if not response_data['success']:
         err = response_data['errors']
@@ -94,8 +82,8 @@ def check_validity_of_cert(cert):
         app.logger.error(e)
         raise APIError(f'Parsing of OCSP response was not successful')
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'DELETE', 'PATCH', 'PUT', 'HEAD'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'DELETE', 'PATCH', 'PUT', 'HEAD'])
 def hello(path):
     pem_cert = request.headers.get('X-SSL-CERT')
     if not pem_cert:
