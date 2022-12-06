@@ -1,9 +1,9 @@
 version: '3'
 
 services:
-  cert_kong_proxy:
-    container_name: cert_kong_proxy
-    image: cert_kong_proxy
+  test:
+    container_name: test
+    image: test
     build:
       context: ../..
       dockerfile: ./build/Dockerfile
