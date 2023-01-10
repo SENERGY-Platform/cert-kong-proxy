@@ -13,7 +13,7 @@ os.environ['CA_URL'] = "test"
 
 from server.main import app
 
-from helper import VALID_CERT, get_bad_ocsp, get_good_ocsp, get_invalid_token, get_valid_token
+from helper import VALID_CERT, get_revoked_ocsp, get_good_ocsp, get_invalid_token, get_valid_token, get_error_ocsp, get_invalid_ocsp_response
 
 class ErrorMessagesCase(unittest.TestCase):
     def setUp(self):
@@ -60,10 +60,28 @@ class ErrorMessagesCase(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertEqual(json.loads(response.data), {'error': 'Could not get token from keycloak'})
 
-    @mock.patch('server.main.get_ocsp', side_effect=get_bad_ocsp)
+    @mock.patch('server.main.get_ocsp', side_effect=get_revoked_ocsp)
     def test_revoked_certificate(self, mock):
         headers = deepcopy(self.valid_headers)
         headers['Request-Method'] = 'GET'
         response = self.client.get("/", headers=headers)
         self.assertEqual(response.status_code, 500)
         self.assertEqual(json.loads(response.data), {'error': 'Certificate is not valid'})
+
+
+    @mock.patch('server.main.get_ocsp', side_effect=get_invalid_ocsp_response)
+    def test_invalid_ocsp_response(self, mock):
+        headers = deepcopy(self.valid_headers)
+        headers['Request-Method'] = 'GET'
+        response = self.client.get("/", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(json.loads(response.data), {'error': "Parsing of OCSP response was not successful"})
+    
+    @mock.patch('server.main.get_ocsp', side_effect=get_error_ocsp)
+    def test_error_ocsp_request(self, mock):
+        headers = deepcopy(self.valid_headers)
+        headers['Request-Method'] = 'GET'
+        response = self.client.get("/", headers=headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(json.loads(response.data), {'error': "Requesting OCSP status was not successful"})
+        

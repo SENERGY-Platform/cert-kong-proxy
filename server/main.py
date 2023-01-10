@@ -66,7 +66,7 @@ def make_ocsp_request(cert):
     if not response_data['success']:
         err = response_data['errors']
         app.logger.debug(err)
-        raise APIError(f'OCSP validation was not successful')
+        raise APIError(f'Requesting OCSP status was not successful')
     return response_data
 
 def check_validity_of_cert(cert):

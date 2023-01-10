@@ -13,7 +13,7 @@ os.environ['CA_URL'] = "test"
 
 from server.main import app
 
-from helper import VALID_CERT, get_bad_ocsp, get_good_ocsp, get_invalid_token, get_valid_token
+from helper import VALID_CERT,  get_good_ocsp, get_valid_token
 
 class SuccessCase(unittest.TestCase):
     def setUp(self):
