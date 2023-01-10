@@ -3,7 +3,7 @@ version: '3'
 services:
   cert-kong-proxy:
     build:
-      context: ../..
+      context: ..
       dockerfile: ./build/Dockerfile
       target: dev
     image: cert-kong-proxy

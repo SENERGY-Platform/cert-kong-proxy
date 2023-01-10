@@ -5,7 +5,7 @@ services:
     container_name: test
     image: test
     build:
-      context: ../..
+      context: ..
       dockerfile: ./build/Dockerfile
       target: test
     volumes:
