@@ -9,7 +9,7 @@ require (
 
 require (
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1
-	github.com/SENERGY-Platform/service-commons v0.0.0-20250331120616-ff35c05099d3
+	github.com/SENERGY-Platform/service-commons v0.0.0-20250624084323-05b07315076c
 	golang.org/x/crypto v0.39.0
 )
 

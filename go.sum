@@ -14,6 +14,8 @@ github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1 h1:FF4jhIpxYbXk
 github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1/go.mod h1:WuvuHGXhnLtXn2ry2kfTaQwco3EY3XTCefLeNqUT+jg=
 github.com/SENERGY-Platform/service-commons v0.0.0-20250331120616-ff35c05099d3 h1:eGyZtg2Rm1D719unrJQTTDvhsNBH06mZX8GPCkF5czc=
 github.com/SENERGY-Platform/service-commons v0.0.0-20250331120616-ff35c05099d3/go.mod h1:1p2CQPNtler5leXqNgaOfr7DlgZUydrQlQYA97ycm4k=
+github.com/SENERGY-Platform/service-commons v0.0.0-20250624084323-05b07315076c h1:bCkt2nFttqbMGMXrcPfg8+jQh/6cUp4bcKo01OQNED0=
+github.com/SENERGY-Platform/service-commons v0.0.0-20250624084323-05b07315076c/go.mod h1:1p2CQPNtler5leXqNgaOfr7DlgZUydrQlQYA97ycm4k=
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 h1:N7oVaKyGp8bttX0bfZGmcGkjz7DLQXhAn3DNd3T0ous=
 github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874/go.mod h1:r5xuitiExdLAJ09PR7vBVENGvp4ZuTBeWTGtxuX3K+c=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
