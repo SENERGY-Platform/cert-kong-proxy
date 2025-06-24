@@ -11,4 +11,7 @@ type Config struct {
 	LogLevel             string `env_var:"LOG_LEVEL"`
 	LogHandler           string `env_var:"LOG_HANDLER"`
 	ServerPort           uint   `env_var:"SERVER_PORT"`
+	ServerPortHTTPS      uint   `env_var:"SERVER_PORT_HTTPS"`
 }
+
+const TokenContextKey = "token"

@@ -2,10 +2,9 @@ package api
 
 import (
 	"context"
+	"crypto/x509"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"time"
 
 	"github.com/SENERGY-Platform/cert-kong-proxy/pkg/log"
@@ -17,53 +16,21 @@ import (
 	"golang.org/x/crypto/ocsp"
 )
 
-type handler struct {
+type Validator struct {
 	caClient client.Client
 	config   config.Config
 	cache    *cacheLib.Cache
-	proxy    http.Handler
 }
 
-const tokenContextKey = "token"
-
-func NewHandler(caClient client.Client, config config.Config) (http.Handler, error) {
-	cache, err := cacheLib.New(cacheLib.Config{})
-	if err != nil {
-		return nil, err
-	}
-	upstreamUrl, err := url.Parse(config.UpstreamUrl)
-	if err != nil {
-		return nil, err
-	}
-	proxy := &httputil.ReverseProxy{
-		Rewrite: func(r *httputil.ProxyRequest) {
-			r.SetURL(upstreamUrl)
-			r.SetXForwarded()
-			// extract token from context and set as Authroization header
-			token, ok := r.In.Context().Value(tokenContextKey).(string)
-			if !ok {
-				log.Logger.Error(fmt.Sprintf("Unable to extract token from context: %#v", r.In.Context().Value(tokenContextKey)))
-			}
-			r.Out.Header.Set("Authorization", token)
-		},
-	}
-	return &handler{
+func NewValidator(caClient client.Client, config config.Config, cache *cacheLib.Cache) *Validator {
+	return &Validator{
 		caClient: caClient,
 		config:   config,
 		cache:    cache,
-		proxy:    proxy,
-	}, nil
+	}
 }
 
-func (m *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// basic checks
-	if len(req.TLS.PeerCertificates) == 0 {
-		// should be done by Server already, just to be sure
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("No certificate provided"))
-		return
-	}
-	peerCert := req.TLS.PeerCertificates[0]
+func (v *Validator) validate(peerCert *x509.Certificate, w http.ResponseWriter, req *http.Request) (cont bool) {
 	expired := peerCert.NotAfter.Before(time.Now())
 	if expired {
 		// should be done by Server already, just to be sure
@@ -76,7 +43,7 @@ func (m *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// check ocsp
 	ocspCacheKey := getOCSPCacheKey(*peerCert)
 	var ocspResponse *ocsp.Response
-	ocspResponseValue, err := cacheLib.Get[ocsp.Response](m.cache, ocspCacheKey, cacheLib.NoValidation)
+	ocspResponseValue, err := cacheLib.Get[ocsp.Response](v.cache, ocspCacheKey, cacheLib.NoValidation)
 	if err == nil {
 		// cache found
 		log.Logger.Debug(fmt.Sprintf("Using cached OCSP Response for user %s", userId))
@@ -84,13 +51,13 @@ func (m *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	} else {
 		// cache miss
 		log.Logger.Debug(fmt.Sprintf("Getting new OCSP Response for user %s", userId))
-		_, ocspResponse, _, err = m.caClient.GetStatus(peerCert, nil)
+		_, ocspResponse, _, err = v.caClient.GetStatus(peerCert, nil)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			w.Write([]byte("Unable to verify certificate at CA"))
 			return
 		}
-		err = m.cache.Set(ocspCacheKey, *ocspResponse, time.Minute)
+		err = v.cache.Set(ocspCacheKey, *ocspResponse, time.Minute)
 		if err != nil {
 			log.Logger.Warn(fmt.Sprintf("Unable to write to cache: %v", err))
 		}
@@ -104,26 +71,24 @@ func (m *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// get token
 	tokenCacheKey := getTokenCacheKey(userId)
 	var token jwt.Token
-	token, err = cacheLib.Get[jwt.Token](m.cache, tokenCacheKey, cacheLib.NoValidation)
+	token, err = cacheLib.Get[jwt.Token](v.cache, tokenCacheKey, cacheLib.NoValidation)
 	if err != nil {
 		// cache miss
 		log.Logger.Debug(fmt.Sprintf("Getting new token for user %s", userId))
 		var expiration time.Duration
-		token, expiration, err = jwt.ExchangeUserToken(m.config.KeycloakUrl, m.config.KeycloakClientId, m.config.KeycloakClientSecret, userId)
+		token, expiration, err = jwt.ExchangeUserToken(v.config.KeycloakUrl, v.config.KeycloakClientId, v.config.KeycloakClientSecret, userId)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			w.Write([]byte("Unable to get user token"))
 			return
 		}
-		err = m.cache.Set(tokenCacheKey, token, expiration)
+		err = v.cache.Set(tokenCacheKey, token, expiration)
 		if err != nil {
 			log.Logger.Warn(fmt.Sprintf("Unable to write to cache: %v", err))
 		}
 	} else {
 		log.Logger.Debug(fmt.Sprintf("Using cached token of user %s", userId))
 	}
-	// set token in context
-	// the reverse proxy extracts the token from the context and sets it as header
-	req = req.WithContext(context.WithValue(req.Context(), tokenContextKey, token.Token))
-	m.proxy.ServeHTTP(w, req)
+	*req = *req.WithContext(context.WithValue(req.Context(), config.TokenContextKey, token.Token))
+	return true
 }
