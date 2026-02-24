@@ -1,6 +1,6 @@
 module github.com/SENERGY-Platform/cert-kong-proxy
 
-go 1.24.4
+go 1.25
 
 require (
 	github.com/SENERGY-Platform/cert-certificate-authority v0.0.5
@@ -9,8 +9,8 @@ require (
 
 require (
 	github.com/SENERGY-Platform/go-service-base/struct-logger v0.4.1
-	github.com/SENERGY-Platform/service-commons v0.0.0-20250624084323-05b07315076c
-	golang.org/x/crypto v0.39.0
+	github.com/SENERGY-Platform/service-commons v0.0.0-20260106114257-16bca4ba28e7
+	golang.org/x/crypto v0.43.0
 )
 
 require (

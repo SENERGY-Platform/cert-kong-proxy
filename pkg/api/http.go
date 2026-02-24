@@ -21,6 +21,9 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/url"
+
+	"github.com/SENERGY-Platform/cert-kong-proxy/pkg/log"
+	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 )
 
 type httpHandler struct {
@@ -29,10 +32,10 @@ type httpHandler struct {
 }
 
 func NewHttpHandler(proxy http.Handler, validator *Validator) http.Handler {
-	return &httpHandler{
+	return accesslog.NewWithLogger(&httpHandler{
 		proxy:     proxy,
 		validator: validator,
-	}
+	}, log.Logger)
 }
 
 func (h *httpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {

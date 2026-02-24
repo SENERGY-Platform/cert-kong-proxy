@@ -18,6 +18,9 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/SENERGY-Platform/cert-kong-proxy/pkg/log"
+	"github.com/SENERGY-Platform/service-commons/pkg/accesslog"
 )
 
 type httpsHandler struct {
@@ -26,10 +29,10 @@ type httpsHandler struct {
 }
 
 func NewHttpsHandler(proxy http.Handler, validator *Validator) http.Handler {
-	return &httpsHandler{
+	return accesslog.NewWithLogger(&httpHandler{
 		proxy:     proxy,
 		validator: validator,
-	}
+	}, log.Logger)
 }
 
 func (h *httpsHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
