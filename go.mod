@@ -1,9 +1,9 @@
 module github.com/SENERGY-Platform/cert-kong-proxy
 
-go 1.25.0
+go 1.26.1
 
 require (
-	github.com/SENERGY-Platform/cert-certificate-authority v0.0.12
+	github.com/SENERGY-Platform/cert-certificate-authority v0.0.13
 	github.com/SENERGY-Platform/go-env-loader v0.5.3
 )
 
